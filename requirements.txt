@@ -1,0 +1,11 @@
+langchain
+pymongo
+pypdf
+unstructured
+pytesseract
+pdf2image
+pillow
+ollama
+tqdm
+python-dotenv
+streamlit
