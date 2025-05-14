@@ -2,14 +2,22 @@ import requests
 
 def get_ollama_embedding(text):
     """Fetch the embedding for the provided text using the Ollama API."""
-    api_url = "http://localhost:11411/v1/embeddings"
+    api_url = "http://localhost:11434/api/embeddings"
     payload = {
-        "model": "llama3",  # Specify the LLaMA 3 model
-        "input": text
+        "model": "nomic-embed-text",
+        "prompt": text
     }
-    response = requests.post(api_url, json=payload)
-    
-    if response.status_code == 200:
-        return response.json()['embedding']
+
+    try:
+        response = requests.post(api_url, json=payload)
+        response.raise_for_status()  # Raises an error for 4xx/5xx responses
+        resp_json = response.json()
+    except requests.exceptions.RequestException as req_err:
+        raise Exception(f"HTTP error during embedding request: {req_err}")
+    except ValueError:
+        raise Exception(f"Invalid JSON response: {response.text}")
+
+    if 'embedding' in resp_json:
+        return resp_json['embedding']
     else:
-        raise Exception(f"Error fetching embedding: {response.text}")
+        raise KeyError(f"'embedding' key not found in response: {resp_json}")

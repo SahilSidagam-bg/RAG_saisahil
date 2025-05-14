@@ -15,7 +15,8 @@ password = os.getenv('MONGO_PASSWORD')  # MongoDB password
 encoded_password = quote_plus(str(password))
 
 # Construct MongoDB URI
-uri = "mongodb+srv://saisahil:<password>@ragdb.1siejk7.mongodb.net/?retryWrites=true&w=majority&appName=RAGdb"
+uri = "mongodb+srv://saisahil:mongodbpassword@ragdb.1siejk7.mongodb.net/RAGdb?retryWrites=true&w=majority&appName=RAGdb"
+
 
 # Connect to MongoDB and access the database
 client = MongoClient(uri, server_api=ServerApi('1'))
@@ -29,16 +30,25 @@ def insert_document(text, embedding):
         'embedding': embedding
     })
 
-def search_similar(query_embedding, limit=3):
-    """Searches the MongoDB collection for documents with similar embeddings."""
-    return list(collection.aggregate([
+def search_similar(query_embedding, top_k=3):
+    """Search for similar documents using MongoDB Atlas vector search."""
+    pipeline = [
         {
-            "$vectorSearch": {
-                "index": "default",
-                "queryVector": query_embedding,
-                "path": "embedding",
-                "numCandidates": 100,
-                "limit": limit
+            "$search": {
+                "index": "default",  # default index name
+                "knnBeta": {
+                    "vector": query_embedding,
+                    "path": "embedding",
+                    "k": top_k
+                }
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "text": 1,
+                "score": {"$meta": "searchScore"}
             }
         }
-    ]))
+    ]
+    return list(collection.aggregate(pipeline))
